@@ -8,8 +8,9 @@ on:
       - master
 
 jobs:
-  build:
+  build-test-jobs:
     runs-on: ubuntu-latest
+    name: build & test
     strategy:
       matrix:
         go-version: [1.20.x]
@@ -19,9 +20,7 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
-          cache-dependency-path: |
-            go.sum
-      - run: go version
+
       - name: Restore cache
         uses: actions/cache@v3
         id: cache
@@ -38,13 +37,37 @@ jobs:
         run: go mod download
 
       - name: Build with Go
-        run: go build -o ${{ env.IMAGE_NAME }} -v .
+        run: go build -o ./build ./main.go
 
-      - name: Test with Go
-        run: go test -json > TestResults-${{ matrix.go-version }}.json
+      - name: Run tests before deploy
+        run: go test ./... -json > TestResults-${{ matrix.go-version }}.json
 
       - name: Upload Go test results
         uses: actions/upload-artifact@v3
         with:
           name: TestResults-${{ matrix.go-version }}
           path: TestResults-${{ matrix.go-version }}.json
+
+  docker-jobs:
+    runs-on: ubuntu-latest
+    name: build & push docker image
+    needs: build-test-jobs
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build the Docker image
+        run: |
+          echo "building image..."
+        shell: bash
+
+  deploy-jobs:
+    runs-on: ubuntu-latest
+    name: deploy to production
+    needs: docker-jobs
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Deploy to production
+        run: |
+          echo "deploying to production..."
+        shell: bash
