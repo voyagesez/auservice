@@ -48,11 +48,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-
       - name: Set up Go ${{ matrix.go-version }}
         uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
+          cache-dependency-path: |
+            go.mod
+            go.sum
+
       - name: Build the Docker image
         run: |
           echo "building image..."
