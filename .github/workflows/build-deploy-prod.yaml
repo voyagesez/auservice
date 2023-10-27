@@ -1,12 +1,11 @@
 name: build and deploy production
-env:
-  IMAGE_NAME: "auservice-service:latest"
-
 on:
   push:
     branches:
       - master
-
+env:
+  IMAGE_NAME: auservice-service:latest
+  GO_VERSION: 1.20.x
 jobs:
   build-test-jobs:
     runs-on: ubuntu-latest
@@ -43,9 +42,17 @@ jobs:
     runs-on: ubuntu-latest
     name: build & push docker image
     needs: build-test-jobs
+    strategy:
+      matrix:
+        go-version: [1.20.x]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Set up Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
       - name: Build the Docker image
         run: |
           echo "building image..."
