@@ -8,5 +8,6 @@ import (
 func NewUserRoutes(r chi.Router) {
 	userHandlers := handlers.NewUserHandlers()
 
-	r.Get("/me", userHandlers.GetMyProfile)
+	r.Get("/", userHandlers.GetMyProfile)
+	r.Get("/{slug}", userHandlers.GetAnotherProfile)
 }

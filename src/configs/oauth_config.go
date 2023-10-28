@@ -19,7 +19,7 @@ func GetOauth2Configs() Oauth2Configs {
 			ClientID:     os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
 			ClientSecret: os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
 			RedirectURL:  os.Getenv("GOOGLE_OAUTH_REDIRECT_URL"),
-			Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
+			Scopes:       []string{"email", "profile"},
 			Endpoint:     endpoints.Google,
 		},
 		Facebook: &oauth2.Config{

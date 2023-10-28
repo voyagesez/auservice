@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 	"os"
 
@@ -32,14 +31,15 @@ func NewOAuthHandlers(oauthConfigs *configs.Oauth2Configs) OAuthHandler {
 }
 
 func (o *OAuthHandlerImpl) Authorize(w http.ResponseWriter, r *http.Request) {
-	state := r.FormValue("state")
-	provider := r.FormValue("provider")
+	provider := chi.URLParam(r, "provider")
 	clientOrigin := os.Getenv("CLIENT_ORIGIN")
 
-	if utils.IsEmptyString(state) || utils.IsEmptyString(provider) {
+	if utils.IsEmptyString(provider) {
 		http.Redirect(w, r, clientOrigin+"/auth/error", http.StatusTemporaryRedirect)
 		return
 	}
+	state := utils.RandomString(32)
+	// Todo: save state to redis with ttl 5 minutes
 
 	switch provider {
 	case constants.Google:
@@ -55,28 +55,53 @@ func (o *OAuthHandlerImpl) Authorize(w http.ResponseWriter, r *http.Request) {
 }
 
 func (o *OAuthHandlerImpl) Token(w http.ResponseWriter, r *http.Request) {
-	code := r.FormValue("code")
 	provider := chi.URLParam(r, "provider")
-	clientOrigin := os.Getenv("CLIENT_ORIGIN")
+	code := r.FormValue("code")
+	state := r.FormValue("state")
 
-	if utils.IsEmptyString(code) || utils.IsEmptyString(provider) {
-		http.Redirect(w, r, clientOrigin+"/auth/error", http.StatusTemporaryRedirect)
+	if utils.IsEmptyString(provider) || utils.IsEmptyString(code) || utils.IsEmptyString(state) {
+		errorResponse(w, r, http.StatusBadRequest, ErrorResponse{
+			Message: "provider, code, state are required",
+			Error:   "bad_request",
+		})
 		return
 	}
 
+	/* TODO:
+	- 1. check state in redis
+	- 2.0 if state not exists, return error
+	- 2.1 if state exists, delete state in redis
+	*/
+
 	strategy := oauthStrategies.GetOauthStrategy(provider)
 	if strategy == nil {
-		http.Redirect(w, r, clientOrigin+"/auth/error", http.StatusTemporaryRedirect)
+		errorResponse(w, r, http.StatusBadRequest, ErrorResponse{
+			Message: "we don't support this provider",
+			Error:   "invalid_provider",
+		})
 		return
 	}
 
 	profile, err := strategy.Handler(r)
 	if err != nil {
-		log.Println(err)
-		http.Redirect(w, r, clientOrigin+"/auth/error", http.StatusTemporaryRedirect)
+		errorResponse(w, r, http.StatusBadRequest, ErrorResponse{
+			Message: err.Error(),
+			Error:   "bad_request",
+		})
 		return
 	}
-	log.Println(profile)
+
+	/* Todo:
+	- 1: Get user from database with profile.Identifier
+	- 2.0: If user not exists, create new user
+	- 2.1: If user exists -> login
+	- 3: Generate token
+	- 5: Redirect to client with token
+	*/
+	successResponse(w, r, http.StatusOK, SuccessResponse{
+		Message: "login success",
+		Data:    profile,
+	})
 }
 
 func (o *OAuthHandlerImpl) RefreshToken(w http.ResponseWriter, r *http.Request) {

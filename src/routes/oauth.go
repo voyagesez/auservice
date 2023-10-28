@@ -11,7 +11,7 @@ func NewOauthRoutes(r chi.Router) {
 	oauthHandlers := handlers.NewOAuthHandlers(&oauthConfigs)
 
 	r.Route("/oauth", func(r chi.Router) {
-		r.Get("/authorize", oauthHandlers.Authorize)
+		r.Get("/{provider}/authorize", oauthHandlers.Authorize)
 		r.Get("/{provider}/token", oauthHandlers.Token)
 	})
 

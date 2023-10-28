@@ -19,11 +19,10 @@ type FacebookStrategy struct{}
 type GithubStrategy struct{}
 
 type OAuthProfile struct {
-	Identifier string `json:"identifier"`
-	Email      string `json:"email"`
-	Name       string `json:"name"`
-	AvatarURL  string `json:"avatar_url"`
-	Provider   string `json:"provider"`
+	Sub       string `json:"sub"`
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	AvatarURL string `json:"avatar_url"`
 }
 
 type FacebookOAuthProfile struct{}
@@ -44,8 +43,6 @@ type OAuthStrategiesImpl interface {
 	Handler(r *http.Request) (*OAuthProfile, error)
 }
 
-var oauthConfigs = configs.GetOauth2Configs()
-
 func (s *OAuthStrategies) GetOauthStrategy(provider string) OAuthStrategiesImpl {
 	switch provider {
 	case constants.Google:
@@ -61,8 +58,7 @@ func (s *OAuthStrategies) GetOauthStrategy(provider string) OAuthStrategiesImpl 
 
 func (g *GoogleStrategy) Handler(r *http.Request) (*OAuthProfile, error) {
 	const googleUserInfoURL = "https://www.googleapis.com/oauth2/v2/userinfo"
-
-	resp, err := getOAuthProfile(r, oauthConfigs.Google, googleUserInfoURL)
+	resp, err := getOAuthProfile(r, configs.GetOauth2Configs().Google, googleUserInfoURL)
 	if err != nil {
 		return nil, err
 	}
@@ -73,17 +69,17 @@ func (g *GoogleStrategy) Handler(r *http.Request) (*OAuthProfile, error) {
 		return nil, err
 	}
 	return &OAuthProfile{
-		Identifier: profile.ID,
-		Email:      profile.Email,
-		Name:       profile.Name,
-		AvatarURL:  profile.AvatarURL,
+		Sub:       fmt.Sprintf("%s|%s", constants.Google, profile.ID),
+		Email:     profile.Email,
+		Name:      profile.Name,
+		AvatarURL: profile.AvatarURL,
 	}, nil
 }
 
 func (g *GithubStrategy) Handler(r *http.Request) (*OAuthProfile, error) {
 	const githubUserInfoURL = "https://api.github.com/user"
 
-	resp, err := getOAuthProfile(r, oauthConfigs.Github, githubUserInfoURL)
+	resp, err := getOAuthProfile(r, configs.GetOauth2Configs().Github, githubUserInfoURL)
 	if err != nil {
 		return nil, err
 	}
@@ -94,16 +90,16 @@ func (g *GithubStrategy) Handler(r *http.Request) (*OAuthProfile, error) {
 		return nil, err
 	}
 	return &OAuthProfile{
-		Identifier: fmt.Sprintf("%d", profile.ID),
-		Email:      profile.Email,
-		Name:       profile.Name,
-		AvatarURL:  profile.AvatarURL,
+		Sub:       fmt.Sprintf("%s|%d", constants.Github, profile.ID),
+		Email:     profile.Email,
+		Name:      profile.Name,
+		AvatarURL: profile.AvatarURL,
 	}, nil
 }
 
 func (f *FacebookStrategy) Handler(r *http.Request) (*OAuthProfile, error) {
 	const facebookUserInfoURL = "https://graph.facebook.com/me?fields=email,name,picture"
-	resp, err := getOAuthProfile(r, oauthConfigs.Facebook, facebookUserInfoURL)
+	resp, err := getOAuthProfile(r, configs.GetOauth2Configs().Facebook, facebookUserInfoURL)
 	if err != nil {
 		return nil, err
 	}
