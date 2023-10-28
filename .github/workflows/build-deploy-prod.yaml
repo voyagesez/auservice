@@ -4,7 +4,7 @@ on:
     branches:
       - master
 env:
-  IMAGE_NAME: auservice-service:latest
+  IMAGE_NAME: auservice:latest
   GO_VERSION: 1.20.x
 jobs:
   build-test-jobs:
