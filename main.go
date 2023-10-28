@@ -22,7 +22,7 @@ func main() {
 	})
 
 	s := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":8000",
 		Handler: r,
 	}
 	go func() {
