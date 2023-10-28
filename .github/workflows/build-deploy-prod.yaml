@@ -4,7 +4,7 @@ on:
     branches:
       - master
 env:
-  IMAGE_NAME: auservice:latest
+  IMAGE_NAME: auservice:production
   GO_VERSION: 1.20.x
 jobs:
   build-test-jobs:
@@ -40,7 +40,7 @@ jobs:
 
   docker-jobs:
     runs-on: ubuntu-latest
-    name: build & push docker image
+    name: Build & push to Docker Hub
     needs: build-test-jobs
     strategy:
       matrix:
@@ -75,7 +75,7 @@ jobs:
 
   deploy-jobs:
     runs-on: ubuntu-latest
-    name: deploy to production
+    name: Deploy to production
     needs: docker-jobs
     steps:
       - name: Deploy to production
