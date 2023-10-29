@@ -20,6 +20,7 @@ type GithubStrategy struct{}
 
 type OAuthProfile struct {
 	Sub       string `json:"sub"`
+	Provider  string `json:"provider"`
 	Email     string `json:"email"`
 	Name      string `json:"name"`
 	AvatarURL string `json:"avatar_url"`
@@ -69,7 +70,8 @@ func (g *GoogleStrategy) Handler(r *http.Request) (*OAuthProfile, error) {
 		return nil, err
 	}
 	return &OAuthProfile{
-		Sub:       fmt.Sprintf("%s|%s", constants.Google, profile.ID),
+		Sub:       fmt.Sprintf("%s", profile.ID),
+		Provider:  constants.Google,
 		Email:     profile.Email,
 		Name:      profile.Name,
 		AvatarURL: profile.AvatarURL,
@@ -90,7 +92,8 @@ func (g *GithubStrategy) Handler(r *http.Request) (*OAuthProfile, error) {
 		return nil, err
 	}
 	return &OAuthProfile{
-		Sub:       fmt.Sprintf("%s|%d", constants.Github, profile.ID),
+		Sub:       fmt.Sprintf("%d", profile.ID),
+		Provider:  constants.Github,
 		Email:     profile.Email,
 		Name:      profile.Name,
 		AvatarURL: profile.AvatarURL,

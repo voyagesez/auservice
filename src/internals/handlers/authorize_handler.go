@@ -10,6 +10,7 @@ import (
 	"github.com/voyagesez/auservice/src/constants"
 	"github.com/voyagesez/auservice/src/internals/db"
 	"github.com/voyagesez/auservice/src/internals/strategies"
+	"github.com/voyagesez/auservice/src/internals/usecase"
 	"github.com/voyagesez/auservice/src/utils"
 )
 
@@ -23,14 +24,18 @@ type OAuthHandler interface {
 type OAuthHandlerImpl struct {
 	oauthConfigs *configs.Oauth2Configs
 	dbInstance   *db.DatabaseInstance
+	authUseCase  usecase.AuthUseCase
 }
 
 var oauthStrategies = strategies.OAuthStrategies{}
 
-func NewOAuthHandlers(oauthConfigs *configs.Oauth2Configs, dbInstance *db.DatabaseInstance) OAuthHandler {
+func NewOAuthHandlers(oauthConfigs *configs.Oauth2Configs, dbInstance *db.DatabaseInstance,
+	authUseCase usecase.AuthUseCase,
+) OAuthHandler {
 	return &OAuthHandlerImpl{
 		oauthConfigs: oauthConfigs,
 		dbInstance:   dbInstance,
+		authUseCase:  authUseCase,
 	}
 }
 
@@ -100,13 +105,7 @@ func (o *OAuthHandlerImpl) Token(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/* Todo:
-	- 1: Get user from database with profile.Identifier
-	- 2.0: If user not exists, create new user
-	- 2.1: If user exists -> login
-	- 3: Generate token
-	- 5: Redirect to client with token
-	*/
+	o.authUseCase.ExternalLogin(ctx, profile, o.authUseCase.ExternalRegister)
 	successResponse(w, r, http.StatusOK, SuccessResponse{
 		Message: "login success",
 		Data:    profile,
