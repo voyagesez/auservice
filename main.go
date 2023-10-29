@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
+	"github.com/voyagesez/auservice/src/internals/db"
 	"github.com/voyagesez/auservice/src/routes"
 )
 
@@ -51,4 +52,5 @@ func init() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal(`load env failed: `, err.Error())
 	}
+	db.ConnectDatabase()
 }

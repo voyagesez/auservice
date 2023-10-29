@@ -20,10 +20,9 @@ func NewUserHandlers() UserHandler {
 }
 
 func (u *UserHandlerImpl) GetMyProfile(w http.ResponseWriter, r *http.Request) {
-	state := utils.RandomString(32)
 	successResponse(w, r, http.StatusOK, SuccessResponse{
 		Message: "your profile",
-		Data:    "it is your profile: " + state,
+		Data:    "it is your profile: " + utils.RandomString(32),
 	})
 }
 
