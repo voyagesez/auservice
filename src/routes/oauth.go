@@ -3,12 +3,14 @@ package routes
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/voyagesez/auservice/src/configs"
+	"github.com/voyagesez/auservice/src/internals/db"
 	"github.com/voyagesez/auservice/src/internals/handlers"
 )
 
 func NewOauthRoutes(r chi.Router) {
 	oauthConfigs := configs.GetOauth2Configs()
-	oauthHandlers := handlers.NewOAuthHandlers(&oauthConfigs)
+	dbInstance := db.GetDatabaseInstance()
+	oauthHandlers := handlers.NewOAuthHandlers(&oauthConfigs, dbInstance)
 
 	r.Route("/oauth", func(r chi.Router) {
 		r.Get("/{provider}/authorize", oauthHandlers.Authorize)

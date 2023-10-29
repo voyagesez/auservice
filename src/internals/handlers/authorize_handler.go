@@ -3,10 +3,12 @@ package handlers
 import (
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/voyagesez/auservice/src/configs"
 	"github.com/voyagesez/auservice/src/constants"
+	"github.com/voyagesez/auservice/src/internals/db"
 	"github.com/voyagesez/auservice/src/internals/strategies"
 	"github.com/voyagesez/auservice/src/utils"
 )
@@ -20,13 +22,15 @@ type OAuthHandler interface {
 
 type OAuthHandlerImpl struct {
 	oauthConfigs *configs.Oauth2Configs
+	dbInstance   *db.DatabaseInstance
 }
 
 var oauthStrategies = strategies.OAuthStrategies{}
 
-func NewOAuthHandlers(oauthConfigs *configs.Oauth2Configs) OAuthHandler {
+func NewOAuthHandlers(oauthConfigs *configs.Oauth2Configs, dbInstance *db.DatabaseInstance) OAuthHandler {
 	return &OAuthHandlerImpl{
 		oauthConfigs: oauthConfigs,
+		dbInstance:   dbInstance,
 	}
 }
 
@@ -38,9 +42,9 @@ func (o *OAuthHandlerImpl) Authorize(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, clientOrigin+"/auth/error", http.StatusTemporaryRedirect)
 		return
 	}
-	state := utils.RandomString(32)
-	// Todo: save state to redis with ttl 5 minutes
 
+	state := utils.RandomString(32)
+	o.dbInstance.RedisClient.Set(r.Context(), "oauth:state:"+state, state, time.Minute*5) // ttl 5 minutes
 	switch provider {
 	case constants.Google:
 		http.Redirect(w, r, o.oauthConfigs.Google.AuthCodeURL(state), http.StatusTemporaryRedirect)
@@ -55,29 +59,34 @@ func (o *OAuthHandlerImpl) Authorize(w http.ResponseWriter, r *http.Request) {
 }
 
 func (o *OAuthHandlerImpl) Token(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	provider := chi.URLParam(r, "provider")
 	code := r.FormValue("code")
 	state := r.FormValue("state")
 
 	if utils.IsEmptyString(provider) || utils.IsEmptyString(code) || utils.IsEmptyString(state) {
 		errorResponse(w, r, http.StatusBadRequest, ErrorResponse{
-			Message: "provider, code, state are required",
-			Error:   "bad_request",
+			Message: "provider, code and state are required",
+			Error:   constants.BAD_REQUEST,
 		})
 		return
 	}
 
-	/* TODO:
-	- 1. check state in redis
-	- 2.0 if state not exists, return error
-	- 2.1 if state exists, delete state in redis
-	*/
+	stateInRedis := o.dbInstance.RedisClient.Get(ctx, "oauth:state:"+state).Val()
+	if utils.IsEmptyString(stateInRedis) {
+		errorResponse(w, r, http.StatusUnauthorized, ErrorResponse{
+			Message: "state not found",
+			Error:   constants.UNAUTHORIZED,
+		})
+		return
+	}
 
+	o.dbInstance.RedisClient.Del(ctx, "oauth:state:"+state)
 	strategy := oauthStrategies.GetOauthStrategy(provider)
 	if strategy == nil {
 		errorResponse(w, r, http.StatusBadRequest, ErrorResponse{
 			Message: "we don't support this provider",
-			Error:   "invalid_provider",
+			Error:   constants.INVALID_PROVIDER,
 		})
 		return
 	}
@@ -86,7 +95,7 @@ func (o *OAuthHandlerImpl) Token(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		errorResponse(w, r, http.StatusBadRequest, ErrorResponse{
 			Message: err.Error(),
-			Error:   "bad_request",
+			Error:   constants.BAD_REQUEST,
 		})
 		return
 	}
