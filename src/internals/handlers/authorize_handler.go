@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/voyagesez/auservice/src/configs"
 	"github.com/voyagesez/auservice/src/constants"
 	"github.com/voyagesez/auservice/src/internals/db"
+	"github.com/voyagesez/auservice/src/internals/dtos"
 	"github.com/voyagesez/auservice/src/internals/strategies"
 	"github.com/voyagesez/auservice/src/internals/usecase"
 	"github.com/voyagesez/auservice/src/utils"
@@ -77,8 +79,7 @@ func (o *OAuthHandlerImpl) Token(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stateInRedis := o.dbInstance.RedisClient.Get(ctx, "oauth:state:"+state).Val()
-	if utils.IsEmptyString(stateInRedis) {
+	if stateInRedis := o.dbInstance.RedisClient.Get(ctx, "oauth:state:"+state).Val(); utils.IsEmptyString(stateInRedis) {
 		errorResponse(w, r, http.StatusUnauthorized, ErrorResponse{
 			Message: "state not found",
 			Error:   constants.UNAUTHORIZED,
@@ -106,9 +107,24 @@ func (o *OAuthHandlerImpl) Token(w http.ResponseWriter, r *http.Request) {
 	}
 
 	o.authUseCase.ExternalLogin(ctx, profile, o.authUseCase.ExternalRegister)
+
+	token, err := utils.GenerateAccessToken(dtos.UserAccountResponse{
+		UID:      pgtype.UUID{},
+		Email:    profile.Email,
+		FullName: profile.Name,
+		Avatar:   profile.AvatarURL,
+	})
+	if err != nil {
+		errorResponse(w, r, http.StatusInternalServerError, ErrorResponse{
+			Message: err.Error(),
+			Error:   constants.INTERNAL_SERVER_ERROR,
+		})
+		return
+	}
+
 	successResponse(w, r, http.StatusOK, SuccessResponse{
-		Message: "login success",
-		Data:    profile,
+		Message: "success",
+		Data:    token,
 	})
 }
 

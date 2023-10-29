@@ -28,3 +28,16 @@ func RandomString(length int) string {
 	}
 	return result
 }
+
+func MappingGender(gender string) string {
+	switch gender {
+	case "F":
+		return "female"
+	case "M":
+		return "male"
+	case "O":
+		return "other"
+	default:
+		return "unknown"
+	}
+}

@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/jwtauth/v5"
 	"github.com/joho/godotenv"
+	"github.com/voyagesez/auservice/src/constants"
 	"github.com/voyagesez/auservice/src/internals/db"
 	"github.com/voyagesez/auservice/src/routes"
 )
@@ -52,5 +54,6 @@ func init() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal(`load env failed: `, err.Error())
 	}
+	constants.JWTAuthenticator = jwtauth.New("HS256", []byte("access_token_secrets"), nil)
 	db.ConnectDatabase()
 }
