@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v5"
@@ -33,9 +34,11 @@ func redisClient() (*redis.Client, error) {
 	ctx := context.Background()
 	redisDNS := "localhost:6379"
 	client := redis.NewClient(&redis.Options{
-		Addr:     redisDNS, // default
-		Password: "",       // default
-		DB:       0,        // default
+		Addr:        redisDNS, // default
+		Password:    "",       // default
+		DB:          0,        // default
+		DialTimeout: 100 * time.Millisecond,
+		ReadTimeout: 100 * time.Millisecond,
 	})
 	if err := client.Ping(ctx).Err(); err != nil {
 		return nil, err
