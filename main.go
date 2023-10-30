@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -21,7 +22,8 @@ func main() {
 	r.Route("/u", routes.NewOauthRoutes)
 	r.Route("/api/v1", routes.NewAPIsRoutes)
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("ok"))
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
 	})
 
 	s := &http.Server{
@@ -29,7 +31,7 @@ func main() {
 		Handler: r,
 	}
 	go func() {
-		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := s.ListenAndServe(); errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(`Server start failed: `, err.Error())
 		}
 	}()
