@@ -74,7 +74,7 @@ func (o *OAuthHandlerImpl) Token(w http.ResponseWriter, r *http.Request) {
 	if utils.IsEmptyString(provider) || utils.IsEmptyString(code) || utils.IsEmptyString(state) {
 		errorResponse(w, r, http.StatusBadRequest, ErrorResponse{
 			Message: "provider, code and state are required",
-			Error:   constants.BAD_REQUEST,
+			Error:   constants.BadRequest,
 		})
 		return
 	}
@@ -82,7 +82,7 @@ func (o *OAuthHandlerImpl) Token(w http.ResponseWriter, r *http.Request) {
 	if stateInRedis := o.dbInstance.RedisClient.Get(ctx, "oauth:state:"+state).Val(); utils.IsEmptyString(stateInRedis) {
 		errorResponse(w, r, http.StatusUnauthorized, ErrorResponse{
 			Message: "state not found",
-			Error:   constants.UNAUTHORIZED,
+			Error:   constants.Unauthorized,
 		})
 		return
 	}
@@ -92,7 +92,7 @@ func (o *OAuthHandlerImpl) Token(w http.ResponseWriter, r *http.Request) {
 	if strategy == nil {
 		errorResponse(w, r, http.StatusBadRequest, ErrorResponse{
 			Message: "we don't support this provider",
-			Error:   constants.INVALID_PROVIDER,
+			Error:   constants.InvalidProvider,
 		})
 		return
 	}
@@ -101,7 +101,7 @@ func (o *OAuthHandlerImpl) Token(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		errorResponse(w, r, http.StatusBadRequest, ErrorResponse{
 			Message: err.Error(),
-			Error:   constants.BAD_REQUEST,
+			Error:   constants.BadRequest,
 		})
 		return
 	}
@@ -117,7 +117,7 @@ func (o *OAuthHandlerImpl) Token(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		errorResponse(w, r, http.StatusInternalServerError, ErrorResponse{
 			Message: err.Error(),
-			Error:   constants.INTERNAL_SERVER_ERROR,
+			Error:   constants.InternalServer,
 		})
 		return
 	}
